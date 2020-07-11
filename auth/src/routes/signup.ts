@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 
+import { User } from '../models/user';
 import { RequestValidationError } from '../errors/request-validation-error';
-import { DatabaseConnectionError } from '../errors/database-connection-error';
+import { BadRequestError } from '../errors/bad-request-error';
 
 const router = express.Router();
 
@@ -17,14 +19,32 @@ router.post(
 	],
 	async (req: Request, res: Response) => {
 		const errors = validationResult(req);
-		console.log('------------');
 
 		if (!errors.isEmpty()) {
 			// return res.status(400).send(errors.array());
 			throw new RequestValidationError(errors.array());
 		}
-		// const { email, password } = req.body;
-		throw new DatabaseConnectionError();
+		const { email, password } = req.body;
+
+		const existingUser = await User.findOne({ email });
+
+		if (existingUser) {
+			throw new BadRequestError('Email is already in use');
+		}
+
+		const user = User.build({ email, password });
+		await user.save();
+		// Generate JWT token
+		const userJwt = jwt.sign(
+			{
+				id: user.id,
+				email: user.email,
+			},
+			process.env.JWT_KEY!
+		);
+		// Store it on session object
+		req.session = { jwt: userJwt };
+		res.status(201).send(user);
 	}
 );
 

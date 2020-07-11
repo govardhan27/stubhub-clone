@@ -15,7 +15,8 @@
   "rules": {
     "no-console": 1,       
     "prettier/prettier": 2,
-    "import/imports-first": ["error", "absolute-first"]
+    "import/imports-first": ["error", "absolute-first"],
+    "@typescript-eslint/no-non-null-assertion": "off"
   },
   "settings": {
     "import/resolver": {
